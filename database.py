@@ -49,6 +49,16 @@ async def init_db() -> None:
         )
         await db.execute(
             """
+            CREATE TABLE IF NOT EXISTS question_forwards (
+                elena_message_id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                answered INTEGER NOT NULL DEFAULT 0
+            )
+            """
+        )
+        await db.execute(
+            """
             CREATE TABLE IF NOT EXISTS consultation_bookings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -101,6 +111,46 @@ async def log_guide_request(user_id: int, guide_name: str) -> None:
             (user_id, guide_name),
         )
         await db.commit()
+
+
+async def save_question_forward(elena_message_id: int, user_id: int) -> None:
+    """Запоминает, какому пользователю отвечать, если Елена сделает Reply на пересланный вопрос."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO question_forwards (elena_message_id, user_id, created_at) VALUES (?, ?, datetime('now'))",
+            (elena_message_id, user_id),
+        )
+        await db.commit()
+
+
+async def get_user_id_by_question_message(elena_message_id: int) -> int | None:
+    """По id сообщения, отправленного Елене, находит пользователя, которому нужно переслать её ответ."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT user_id FROM question_forwards WHERE elena_message_id = ?", (elena_message_id,)
+        )
+        row = await cursor.fetchone()
+        return row[0] if row else None
+
+
+async def mark_question_forward_answered(elena_message_id: int) -> None:
+    """Отмечает вопрос как отвеченный — чтобы не подставлять его повторно как «последний без ответа»."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "UPDATE question_forwards SET answered = 1 WHERE elena_message_id = ?", (elena_message_id,)
+        )
+        await db.commit()
+
+
+async def get_latest_unanswered_question() -> tuple[int, int] | None:
+    """Возвращает (elena_message_id, user_id) самого свежего вопроса без ответа, если такой есть."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            "SELECT elena_message_id, user_id FROM question_forwards "
+            "WHERE answered = 0 ORDER BY elena_message_id DESC LIMIT 1"
+        )
+        row = await cursor.fetchone()
+        return (row[0], row[1]) if row else None
 
 
 async def create_booking(
