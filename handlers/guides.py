@@ -22,8 +22,12 @@ from subscription import is_user_subscribed
 
 router = Router()
 
-# Папка guides/ лежит рядом с bot.py, а не рядом с этим файлом — поднимаемся на уровень выше
-GUIDES_DIR = Path(__file__).resolve().parent.parent / "guides"
+# Если рядом с bot.py есть папка data/ (постоянное хранилище на сервере — Volume у Bothost),
+# гайды кладём внутрь неё (data/guides/), чтобы они не пропадали при пересборке бота.
+# Локально такой папки нет — используется обычная guides/ рядом с bot.py, как раньше.
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_DATA_DIR = _PROJECT_ROOT / "data"
+GUIDES_DIR = (_DATA_DIR / "guides") if _DATA_DIR.is_dir() else (_PROJECT_ROOT / "guides")
 
 
 def guides_keyboard() -> InlineKeyboardMarkup:
