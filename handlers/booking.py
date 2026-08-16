@@ -272,7 +272,9 @@ async def callback_elena_alt_time(callback: CallbackQuery, state: FSMContext, bo
     try:
         await bot.send_message(
             booking["user_id"],
-            f"Елена предложила другое время для консультации:\n\n{lines}\n\nВыберите подходящий вариант:",
+            f"К сожалению, {_format_date(booking['requested_date'])} в {booking['requested_time']} "
+            f"у Елены уже занято 😔\n\nОна предлагает другие варианты:\n\n{lines}\n\n"
+            "Выберите подходящий:",
             reply_markup=keyboard,
         )
     except (TelegramForbiddenError, TelegramBadRequest):
