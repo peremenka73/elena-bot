@@ -49,21 +49,21 @@ async def init_db() -> None:
         )
         await db.execute(
             """
-            CREATE TABLE IF NOT EXISTS booking_forwards (
-                elena_message_id INTEGER PRIMARY KEY,
+            CREATE TABLE IF NOT EXISTS consultation_bookings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
-                created_at TEXT NOT NULL,
-                answered INTEGER NOT NULL DEFAULT 0
+                consultation_type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                requested_date TEXT NOT NULL,
+                requested_time TEXT NOT NULL,
+                confirmed_date TEXT,
+                confirmed_time TEXT,
+                proposed_slots TEXT,
+                elena_request_message_id INTEGER,
+                created_at TEXT NOT NULL
             )
             """
         )
-        # На случай, если бот уже запускался раньше со старой версией таблицы
-        # (без колонки answered) — добавляем колонку, если её ещё нет.
-        try:
-            await db.execute("ALTER TABLE booking_forwards ADD COLUMN answered INTEGER NOT NULL DEFAULT 0")
-            await db.commit()
-        except sqlite3.OperationalError:
-            pass
         await db.commit()
 
 
@@ -103,46 +103,68 @@ async def log_guide_request(user_id: int, guide_name: str) -> None:
         await db.commit()
 
 
-async def save_booking_forward(elena_message_id: int, user_id: int) -> None:
-    """Запоминает, какому пользователю отвечать, если Елена сделает Reply на это сообщение."""
+async def create_booking(
+    user_id: int, consultation_type: str, requested_date: str, requested_time: str
+) -> int:
+    """Создаёт новую заявку на консультацию (статус 'pending'), возвращает её id."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute(
+            """
+            INSERT INTO consultation_bookings
+                (user_id, consultation_type, status, requested_date, requested_time, created_at)
+            VALUES (?, ?, 'pending', ?, ?, datetime('now'))
+            """,
+            (user_id, consultation_type, requested_date, requested_time),
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+
+async def set_booking_elena_message_id(booking_id: int, message_id: int) -> None:
+    """Запоминает id сообщения с заявкой, отправленного Елене — на его кнопки она отвечает."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            "INSERT INTO booking_forwards (elena_message_id, user_id, created_at) VALUES (?, ?, datetime('now'))",
-            (elena_message_id, user_id),
+            "UPDATE consultation_bookings SET elena_request_message_id = ? WHERE id = ?",
+            (message_id, booking_id),
         )
         await db.commit()
 
 
-async def get_user_id_by_elena_message(elena_message_id: int) -> int | None:
-    """По id сообщения, отправленного Елене, находит пользователя, которому нужно переслать её ответ."""
+async def get_booking(booking_id: int) -> dict | None:
+    """Возвращает данные заявки на консультацию в виде словаря, либо None, если такой нет."""
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute(
-            "SELECT user_id FROM booking_forwards WHERE elena_message_id = ?",
-            (elena_message_id,),
-        )
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute("SELECT * FROM consultation_bookings WHERE id = ?", (booking_id,))
         row = await cursor.fetchone()
-        return row[0] if row else None
+        return dict(row) if row else None
 
 
-async def mark_booking_forward_answered(elena_message_id: int) -> None:
-    """Отмечает заявку как отвеченную — чтобы не подставлять её повторно как «последнюю без ответа»."""
+async def set_booking_status(booking_id: int, status: str) -> None:
+    """Меняет статус заявки: pending / alternatives_proposed / confirmed."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE consultation_bookings SET status = ? WHERE id = ?", (status, booking_id))
+        await db.commit()
+
+
+async def save_proposed_slots(booking_id: int, slots_json: str) -> None:
+    """Сохраняет 3 предложенных Еленой варианта (в виде JSON-строки) и переводит заявку в статус ожидания выбора."""
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute(
-            "UPDATE booking_forwards SET answered = 1 WHERE elena_message_id = ?",
-            (elena_message_id,),
+            "UPDATE consultation_bookings SET proposed_slots = ?, status = 'alternatives_proposed' WHERE id = ?",
+            (slots_json, booking_id),
         )
         await db.commit()
 
 
-async def get_latest_unanswered_booking() -> tuple[int, int] | None:
-    """Возвращает (elena_message_id, user_id) самой свежей заявки без ответа, если такая есть."""
+async def confirm_booking(booking_id: int, confirmed_date: str, confirmed_time: str) -> None:
+    """Фиксирует итоговые дату и время консультации, статус — 'confirmed'."""
     async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute(
-            "SELECT elena_message_id, user_id FROM booking_forwards "
-            "WHERE answered = 0 ORDER BY elena_message_id DESC LIMIT 1"
+        await db.execute(
+            "UPDATE consultation_bookings SET status = 'confirmed', confirmed_date = ?, confirmed_time = ? "
+            "WHERE id = ?",
+            (confirmed_date, confirmed_time, booking_id),
         )
-        row = await cursor.fetchone()
-        return (row[0], row[1]) if row else None
+        await db.commit()
 
 
 async def get_ai_questions_used(user_id: int) -> int:
