@@ -4,8 +4,8 @@
 from aiogram.types import KeyboardButton, ReplyKeyboardMarkup
 
 GUIDES_BUTTON_TEXT = "📚 Гайды"
-ASK_AI_BUTTON_TEXT = "🤖 Спросить ИИ"
-BOOKING_BUTTON_TEXT = "📅 Запись на консультацию"
+ASK_AI_BUTTON_TEXT = "Написать ассистенту"
+BOOKING_BUTTON_TEXT = "Запись на консультацию"
 
 # Тексты кнопок меню — используются в других хендлерах, чтобы нажатие кнопки меню
 # не «проглатывалось» как ответ на предыдущий вопрос (например, как текст для ИИ)
