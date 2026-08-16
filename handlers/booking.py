@@ -64,7 +64,7 @@ class ElenaAltStates(StatesGroup):
 
 def booking_button() -> InlineKeyboardButton:
     """Кнопка «Записаться на консультацию» — используется в меню гайдов и после выдачи гайда."""
-    return InlineKeyboardButton(text="📅 Записаться на консультацию", callback_data=BOOK_APPOINTMENT_CALLBACK)
+    return InlineKeyboardButton(text="Записаться на консультацию", callback_data=BOOK_APPOINTMENT_CALLBACK)
 
 
 def _format_date(iso_date: str) -> str:
