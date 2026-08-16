@@ -316,7 +316,8 @@ async def _notify_confirmed(
         f"Время: {confirmed_time}\n\n"
         "Чтобы консультация состоялась, пожалуйста, произведите оплату не позднее чем "
         "за сутки до назначенного времени.\n\n"
-        f"Реквизиты для оплаты:\n{PAYMENT_REQUISITES}"
+        f"Реквизиты для оплаты:\n{PAYMENT_REQUISITES}\n\n"
+        "Если остались вопросы — можете задать их прямо тут, в этом чате 💛"
     )
     try:
         await bot.send_message(user_id, user_text)
