@@ -45,13 +45,13 @@ class AIStates(StatesGroup):
 
 def ai_button() -> InlineKeyboardButton:
     """Кнопка «Задать вопрос ИИ-ассистенту» — используется в меню гайдов и после подписки."""
-    return InlineKeyboardButton(text="🤖 Задать вопрос ИИ-ассистенту", callback_data=ASK_AI_CALLBACK)
+    return InlineKeyboardButton(text="Задать вопрос ИИ-ассистенту 🤖", callback_data=ASK_AI_CALLBACK)
 
 
 def _limit_reached_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="💬 Продолжить на сайте", url=SITE_URL)],
+            [InlineKeyboardButton(text="Продолжить на сайте 💬", url=SITE_URL)],
             [booking_button()],
         ]
     )

@@ -30,10 +30,10 @@ def subscribe_keyboard(payload: str | None = None) -> InlineKeyboardMarkup:
     channel_url = f"https://t.me/{CHANNEL_USERNAME.lstrip('@')}"
     return InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="📲 Подписаться на канал", url=channel_url)],
+            [InlineKeyboardButton(text="Подписаться на канал 📲", url=channel_url)],
             [
                 InlineKeyboardButton(
-                    text="✅ Я подписался, проверить",
+                    text="Я подписался, проверить ✅",
                     callback_data=f"check_subscription:{payload or ''}",
                 )
             ],

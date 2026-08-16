@@ -64,7 +64,7 @@ class ElenaAltStates(StatesGroup):
 
 def booking_button() -> InlineKeyboardButton:
     """Кнопка «Записаться на консультацию» — используется в меню гайдов и после выдачи гайда."""
-    return InlineKeyboardButton(text="Записаться на консультацию", callback_data=BOOK_APPOINTMENT_CALLBACK)
+    return InlineKeyboardButton(text="Записаться на консультацию 📅", callback_data=BOOK_APPOINTMENT_CALLBACK)
 
 
 def _format_date(iso_date: str) -> str:
@@ -179,8 +179,8 @@ async def callback_choose_time(callback: CallbackQuery, state: FSMContext, bot: 
     )
     keyboard = InlineKeyboardMarkup(
         inline_keyboard=[
-            [InlineKeyboardButton(text="✅ Подтвердить", callback_data=f"cconfirm:{booking_id}")],
-            [InlineKeyboardButton(text="🔄 Предложить другое время", callback_data=f"calt:{booking_id}")],
+            [InlineKeyboardButton(text="Подтвердить ✅", callback_data=f"cconfirm:{booking_id}")],
+            [InlineKeyboardButton(text="Предложить другое время 🔄", callback_data=f"calt:{booking_id}")],
         ]
     )
     try:
