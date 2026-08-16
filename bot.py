@@ -7,6 +7,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.types import BotCommand
 
 from config import BOT_TOKEN
 from database import init_db
@@ -33,6 +34,14 @@ async def main() -> None:
     dp.include_router(feedback.router)
 
     await bot.delete_webhook(drop_pending_updates=True)
+
+    # Меню команд (значок "/" рядом с полем ввода в Telegram)
+    await bot.set_my_commands(
+        [
+            BotCommand(command="start", description="Перезапустить бота"),
+            BotCommand(command="guides", description="Показать гайды"),
+        ]
+    )
 
     print("Бот запущен и слушает сообщения... (нажмите Ctrl+C, чтобы остановить)")
     await dp.start_polling(bot)
