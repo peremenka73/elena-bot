@@ -243,3 +243,40 @@ async def get_all_user_ids() -> list[int]:
         cursor = await db.execute("SELECT user_id FROM users")
         rows = await cursor.fetchall()
         return [row[0] for row in rows]
+
+
+async def get_stats() -> dict:
+    """Собирает сводную статистику по боту — для команды /stats."""
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("SELECT COUNT(*) FROM users")
+        total_users = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT COUNT(*) FROM users WHERE is_subscribed_channel = 1")
+        subscribed_users = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT COUNT(*) FROM guide_requests")
+        total_guide_requests = (await cursor.fetchone())[0]
+
+        cursor = await db.execute(
+            "SELECT guide_name, COUNT(*) FROM guide_requests GROUP BY guide_name ORDER BY COUNT(*) DESC"
+        )
+        guide_breakdown = await cursor.fetchall()
+
+        cursor = await db.execute("SELECT COALESCE(SUM(free_ai_questions_used), 0) FROM users")
+        total_ai_questions = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT COUNT(*) FROM consultation_bookings")
+        total_bookings = (await cursor.fetchone())[0]
+
+        cursor = await db.execute("SELECT status, COUNT(*) FROM consultation_bookings GROUP BY status")
+        booking_breakdown = await cursor.fetchall()
+
+        return {
+            "total_users": total_users,
+            "subscribed_users": subscribed_users,
+            "total_guide_requests": total_guide_requests,
+            "guide_breakdown": guide_breakdown,
+            "total_ai_questions": total_ai_questions,
+            "total_bookings": total_bookings,
+            "booking_breakdown": booking_breakdown,
+        }
