@@ -31,11 +31,12 @@ GUIDES_DIR = (_DATA_DIR / "guides") if _DATA_DIR.is_dir() else (_PROJECT_ROOT / 
 
 
 def guides_keyboard() -> InlineKeyboardMarkup:
-    """Собирает inline-клавиатуру из списка гайдов в config.py."""
-    buttons = [
-        [InlineKeyboardButton(text=guide["title"], callback_data=f"guide:{key}")]
+    """Собирает inline-клавиатуру из списка гайдов в config.py — по 2 кнопки в ряд."""
+    guide_buttons = [
+        InlineKeyboardButton(text=guide["title"], callback_data=f"guide:{key}")
         for key, guide in GUIDES.items()
     ]
+    buttons = [guide_buttons[i : i + 2] for i in range(0, len(guide_buttons), 2)]
     buttons.append([booking_button()])
     buttons.append([ai_button()])
     return InlineKeyboardMarkup(inline_keyboard=buttons)
